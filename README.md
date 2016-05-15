@@ -25,3 +25,5 @@ Once these environment variables have been set for the deployed app, it can be s
 ```
 cf start memory-based-autoscaler
 ```
+
+and watch the logs
