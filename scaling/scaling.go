@@ -20,6 +20,7 @@ import (
 	"log"
         "os"
 	"fmt"
+	"time"
 
 	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
 	"github.com/Sirupsen/logrus"
@@ -31,6 +32,15 @@ type Event struct {
 	Msg    string
 	Type   string
 }
+
+type MemoryDetails struct {
+	Memory uint64
+	LastTime int64
+}
+
+var MemoryMap = make(map[int32]MemoryDetails)
+
+var LastScaleTime = time.Now().UnixNano()
 
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
@@ -58,6 +68,8 @@ func processEvent(msg *events.Envelope) {
 			var memory = event.Fields["memory_bytes"]
 			var instance = event.Fields["instance_index"]
 			fmt.Printf("memory == %d and instanceid == %d\n", memory, instance)
+			updateMemoryMap(event)
+			CheckMemoryAverage()
 		}
 	}
 }
@@ -133,4 +145,62 @@ func (e Event) ShipEvent() {
 
 
 	logrus.WithFields(e.Fields).Info(e.Msg)
+}
+
+func CheckMemoryAverage() {
+
+	var sum uint64 = 0
+	count := 0	
+
+	fmt.Printf("Memory map size == %d\n" , len(MemoryMap))
+
+	for key, value := range MemoryMap {
+		fmt.Printf("Memory Map output:  instance, bytes, lastTime = %d, %d, %d\n", key, value.Memory, value.LastTime)
+		totalElapsed := time.Now().UnixNano() - value.LastTime
+                elapsedSeconds := totalElapsed / 1000000000
+		// elapsedSeconds shows the last time the map was updated with a container metric.
+		// if that's more than ten minutes old, we assume the app instance has gone away
+		// and shouldn't be accounted for in the average calculations
+		if elapsedSeconds < 600 {
+			sum += value.Memory
+			count += 1
+		}
+	}
+
+	if count > 0 {
+
+		average := float64(sum) / float64(count)
+
+		fmt.Printf("Average Memory consumption for all running instances is %f\n", average)	
+
+		if average > 220000000 {
+
+			scaleElapsed := time.Now().UnixNano() - LastScaleTime
+			scaleElapsedSeconds := scaleElapsed / 1000000000
+
+			fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
+
+			if scaleElapsedSeconds > 120 {
+				
+				fmt.Printf("Here is where we'd make a call to scale up\n")
+			}
+		}
+
+	}
+
+}
+
+
+func updateMemoryMap(ctrEvent Event) {
+
+	memory := ctrEvent.Fields["memory_bytes"].(uint64)
+	instance := ctrEvent.Fields["instance_index"].(int32)
+	lastTime := time.Now().UnixNano()
+
+	memDetails := MemoryMap[instance]
+
+	memDetails.Memory = memory
+	memDetails.LastTime = lastTime
+
+	MemoryMap[instance] = memDetails
 }
