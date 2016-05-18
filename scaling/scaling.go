@@ -41,6 +41,7 @@ type MemoryDetails struct {
 var MemoryMap = make(map[int32]MemoryDetails)
 
 var LastScaleTime = time.Now().UnixNano()
+var TimeFirstOverThreshold int64 = 1 
 
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
@@ -175,15 +176,29 @@ func CheckMemoryAverage() {
 
 		if average > 220000000 {
 
-			scaleElapsed := time.Now().UnixNano() - LastScaleTime
-			scaleElapsedSeconds := scaleElapsed / 1000000000
+			if TimeFirstOverThreshold == 1 {
+				TimeFirstOverThreshold = time.Now().UnixNano()
+			} else {
+				thresholdElapsed := time.Now().UnixNano() - TimeFirstOverThreshold
+				thresholdElapsedSeconds := thresholdElapsed / 1000000000
 
-			fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
+				fmt.Printf("seconds since first threshold crossing is %d\n", thresholdElapsedSeconds)
 
-			if scaleElapsedSeconds > 120 {
-				
-				fmt.Printf("Here is where we'd make a call to scale up\n")
+				if thresholdElapsedSeconds > 60 {
+					scaleElapsed := time.Now().UnixNano() - LastScaleTime
+                        		scaleElapsedSeconds := scaleElapsed / 1000000000
+
+                        		fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
+
+                        		if scaleElapsedSeconds > 120 {
+
+                                		fmt.Printf("Here is where we'd make a call to scale up\n")
+                        		}
+				}
 			}
+
+		} else {
+			TimeFirstOverThreshold = 1
 		}
 
 	}
