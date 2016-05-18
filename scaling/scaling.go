@@ -1,0 +1,136 @@
+/*
+Copyright 2016 Pivotal
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package scaling
+
+import (
+	"log"
+        "os"
+	"fmt"
+
+	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
+	"github.com/Sirupsen/logrus"
+        "github.com/cloudfoundry/sonde-go/events"
+)
+
+type Event struct {
+	Fields logrus.Fields
+	Msg    string
+	Type   string
+}
+
+// ProcessEvents churns through the firehose channel, processing incoming events.
+func ProcessEvents(in chan *events.Envelope) {
+        for msg := range in {
+                processEvent(msg)
+        }
+}
+
+func processEvent(msg *events.Envelope) {
+
+	logger:= log.New(os.Stdout, "", 0)
+        
+        eventType := msg.GetEventType()
+	if eventType.String() == "ContainerMetric" {
+
+		var event Event
+
+		logger.Println("Recieved message, type == " + eventType.String())
+
+		event = ContainerMetric(msg)
+
+		event.AnnotateWithAppData()
+		if event.Fields["cf_app_name"] == "dummy" {
+			logger.Println("found a dummy event!")
+			var memory = event.Fields["memory_bytes"]
+			var instance = event.Fields["instance_index"]
+			fmt.Printf("memory == %d and instanceid == %d\n", memory, instance)
+		}
+	}
+}
+
+
+func ContainerMetric(msg *events.Envelope) Event {
+	containerMetric := msg.GetContainerMetric()
+
+	fields := logrus.Fields{
+		"origin":         msg.GetOrigin(),
+		"cf_app_id":      containerMetric.GetApplicationId(),
+		"cpu_percentage": containerMetric.GetCpuPercentage(),
+		"disk_bytes":     containerMetric.GetDiskBytes(),
+		"instance_index": containerMetric.GetInstanceIndex(),
+		"memory_bytes":   containerMetric.GetMemoryBytes(),
+	}
+
+	return Event{
+		Fields: fields,
+		Msg:    "",
+		Type:   msg.GetEventType().String(),
+	}
+}
+
+func (e *Event) AnnotateWithAppData() {
+
+	cf_app_id := e.Fields["cf_app_id"]
+	appGuid := ""
+	if cf_app_id != nil {
+		appGuid = fmt.Sprintf("%s", cf_app_id)
+	}
+
+	if cf_app_id != nil && appGuid != "<nil>" && cf_app_id != "" {
+		appInfo := getAppInfo(appGuid)
+		cf_app_name := appInfo.Name
+		cf_space_id := appInfo.SpaceGuid
+		cf_space_name := appInfo.SpaceName
+		cf_org_id := appInfo.OrgGuid
+		cf_org_name := appInfo.OrgName
+
+		if cf_app_name != "" {
+			e.Fields["cf_app_name"] = cf_app_name
+		}
+
+		if cf_space_id != "" {
+			e.Fields["cf_space_id"] = cf_space_id
+		}
+
+		if cf_space_name != "" {
+			e.Fields["cf_space_name"] = cf_space_name
+		}
+
+		if cf_org_id != "" {
+			e.Fields["cf_org_id"] = cf_org_id
+		}
+
+		if cf_org_name != "" {
+			e.Fields["cf_org_name"] = cf_org_name
+		}
+	}
+}
+
+func getAppInfo(appGuid string) caching.App {
+	if app := caching.GetAppInfo(appGuid); app.Name != "" {
+		return app
+	} else {
+		caching.GetAppByGuid(appGuid)
+	}
+	return caching.GetAppInfo(appGuid)
+}
+
+func (e Event) ShipEvent() {
+
+
+	logrus.WithFields(e.Fields).Info(e.Msg)
+}
