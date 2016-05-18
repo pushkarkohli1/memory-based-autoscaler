@@ -30,6 +30,7 @@ import (
 	"github.com/cloudfoundry-community/firehose-to-syslog/firehose"
 	"github.com/cloudfoundry-community/go-cfclient"
 
+        "github.com/ECSTeam/memory-based-autoscaler/scaling"
         "github.com/ECSTeam/memory-based-autoscaler/service"
 )
 
@@ -110,6 +111,7 @@ func main() {
 	if firehose != nil {
 		logger.Println("Firehose Subscription Succesfull! Routing events...")
 		//usageevents.ProcessEvents(firehose)
+                scaling.ProcessEvents(firehose)
 	} else {
 		logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
 	}
