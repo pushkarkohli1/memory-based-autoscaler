@@ -17,8 +17,8 @@ limitations under the License.
 package scaling
 
 import (
-	"log"
         "os"
+	"strconv"
 	"fmt"
 	"time"
 
@@ -43,8 +43,17 @@ var MemoryMap = make(map[int32]MemoryDetails)
 var LastScaleTime = time.Now().UnixNano()
 var TimeFirstOverThreshold int64 = 1 
 
+var appName = os.Getenv("APPLICATION_NAME")
+var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
+var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
+var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
+
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
+
+		fmt.Printf("our env vars = %s, %d, %d, %d\n", appName, memoryThresholdLimit, timeBetweenScales, timeOverThreshold)
+
+
         for msg := range in {
                 processEvent(msg)
         }
@@ -52,23 +61,17 @@ func ProcessEvents(in chan *events.Envelope) {
 
 func processEvent(msg *events.Envelope) {
 
-	logger:= log.New(os.Stdout, "", 0)
         
         eventType := msg.GetEventType()
 	if eventType.String() == "ContainerMetric" {
 
 		var event Event
 
-		logger.Println("Recieved message, type == " + eventType.String())
-
 		event = ContainerMetric(msg)
 
 		event.AnnotateWithAppData()
-		if event.Fields["cf_app_name"] == "dummy" {
-			logger.Println("found a dummy event!")
-			var memory = event.Fields["memory_bytes"]
-			var instance = event.Fields["instance_index"]
-			fmt.Printf("memory == %d and instanceid == %d\n", memory, instance)
+		if event.Fields["cf_app_name"] == appName {
+
 			updateMemoryMap(event)
 			CheckMemoryAverage()
 		}
@@ -153,10 +156,9 @@ func CheckMemoryAverage() {
 	var sum uint64 = 0
 	count := 0	
 
-	fmt.Printf("Memory map size == %d\n" , len(MemoryMap))
-
 	for key, value := range MemoryMap {
-		fmt.Printf("Memory Map output:  instance, bytes, lastTime = %d, %d, %d\n", key, value.Memory, value.LastTime)
+		meminMb := value.Memory / 1000000
+		fmt.Printf("Memory Map output:  instance, bytes, lastTime = %d, %d, %d\n", key, meminMb, value.LastTime)
 		totalElapsed := time.Now().UnixNano() - value.LastTime
                 elapsedSeconds := totalElapsed / 1000000000
 		// elapsedSeconds shows the last time the map was updated with a container metric.
@@ -171,10 +173,11 @@ func CheckMemoryAverage() {
 	if count > 0 {
 
 		average := float64(sum) / float64(count)
+		averageInMb := average / 1000000
 
-		fmt.Printf("Average Memory consumption for all running instances is %f\n", average)	
+		fmt.Printf("Average Memory consumption for all running instances is %f\n", averageInMb)	
 
-		if average > 220000000 {
+		if int(averageInMb) > memoryThresholdLimit {
 
 			if TimeFirstOverThreshold == 1 {
 				TimeFirstOverThreshold = time.Now().UnixNano()
@@ -184,13 +187,13 @@ func CheckMemoryAverage() {
 
 				fmt.Printf("seconds since first threshold crossing is %d\n", thresholdElapsedSeconds)
 
-				if thresholdElapsedSeconds > 60 {
+				if thresholdElapsedSeconds > int64(timeOverThreshold) {
 					scaleElapsed := time.Now().UnixNano() - LastScaleTime
                         		scaleElapsedSeconds := scaleElapsed / 1000000000
 
                         		fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
 
-                        		if scaleElapsedSeconds > 120 {
+                        		if scaleElapsedSeconds > int64(timeBetweenScales) {
 
                                 		fmt.Printf("Here is where we'd make a call to scale up\n")
                         		}
