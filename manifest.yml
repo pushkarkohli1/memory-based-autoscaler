@@ -6,3 +6,8 @@ applications:
   disk_quota: 1024M
   command: memory-based-autoscaler 
   buildpack: https://github.com/cloudfoundry/go-buildpack.git
+  env:
+    APPLICATION_NAME: dummy
+    MEMORY_THRESHOLD_LIMIT: 220
+    TIME_BETWEEN_SCALES: 180
+    TIME_OVER_THRESHOLD: 75
