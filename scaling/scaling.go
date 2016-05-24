@@ -51,9 +51,6 @@ var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
 
-		fmt.Printf("our env vars = %s, %d, %d, %d\n", appName, memoryThresholdLimit, timeBetweenScales, timeOverThreshold)
-
-
         for msg := range in {
                 processEvent(msg)
         }
@@ -63,6 +60,9 @@ func processEvent(msg *events.Envelope) {
 
         
         eventType := msg.GetEventType()
+
+	// only container events will contain the memory statistics
+
 	if eventType.String() == "ContainerMetric" {
 
 		var event Event
@@ -70,14 +70,18 @@ func processEvent(msg *events.Envelope) {
 		event = ContainerMetric(msg)
 
 		event.AnnotateWithAppData()
-		if event.Fields["cf_app_name"] == appName {
 
+		// once the event has been annotated with application data, lets see if 
+		// its for the app we care about
+
+		if event.Fields["cf_app_name"] == appName {
 			updateMemoryMap(event)
 			CheckMemoryAverage()
 		}
 	}
 }
 
+// anntoates an event with the container metrics from the message
 
 func ContainerMetric(msg *events.Envelope) Event {
 	containerMetric := msg.GetContainerMetric()
@@ -97,6 +101,8 @@ func ContainerMetric(msg *events.Envelope) Event {
 		Type:   msg.GetEventType().String(),
 	}
 }
+
+// annotates an event with the application data (org, space, app names/ids)
 
 func (e *Event) AnnotateWithAppData() {
 
@@ -147,7 +153,6 @@ func getAppInfo(appGuid string) caching.App {
 
 func (e Event) ShipEvent() {
 
-
 	logrus.WithFields(e.Fields).Info(e.Msg)
 }
 
@@ -155,6 +160,8 @@ func CheckMemoryAverage() {
 
 	var sum uint64 = 0
 	count := 0	
+
+	// loop over every event in the map
 
 	for key, value := range MemoryMap {
 		meminMb := value.Memory / 1000000
@@ -177,17 +184,31 @@ func CheckMemoryAverage() {
 
 		fmt.Printf("Average Memory consumption for all running instances is %f\n", averageInMb)	
 
+		// see if that average is more than our threshold
+
 		if int(averageInMb) > memoryThresholdLimit {
+
+			// check to see if this is the first crossing of the memory threshold by
+			// checking that TimeFirstOverThreshold value.  1 is a magic number to 
+			// note that it hasn't been crossed yet
 
 			if TimeFirstOverThreshold == 1 {
 				TimeFirstOverThreshold = time.Now().UnixNano()
 			} else {
+
+				// we've been over that threshold for at least a few seconds, lets find
+				// out how long we've been over the memory threshold
+			
 				thresholdElapsed := time.Now().UnixNano() - TimeFirstOverThreshold
 				thresholdElapsedSeconds := thresholdElapsed / 1000000000
 
 				fmt.Printf("seconds since first threshold crossing is %d\n", thresholdElapsedSeconds)
 
 				if thresholdElapsedSeconds > int64(timeOverThreshold) {
+
+					// we've been over the memory threshold for quite a while.  Let's
+					// see how long its been since we've scaled
+
 					scaleElapsed := time.Now().UnixNano() - LastScaleTime
                         		scaleElapsedSeconds := scaleElapsed / 1000000000
 
@@ -195,12 +216,19 @@ func CheckMemoryAverage() {
 
                         		if scaleElapsedSeconds > int64(timeBetweenScales) {
 
+						// we've been over the threshold for a while and haven't scaled 
+						// for a while.  time to scale it up.
+
                                 		fmt.Printf("Here is where we'd make a call to scale up\n")
                         		}
 				}
 			}
 
 		} else {
+
+			// average memory usage is not over the threshold, so reset the first
+			// time over threshold variable back to the magic number 1
+
 			TimeFirstOverThreshold = 1
 		}
 
