@@ -24,7 +24,8 @@ import (
 
 	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
 	"github.com/Sirupsen/logrus"
-        "github.com/cloudfoundry/sonde-go/events"
+  "github.com/cloudfoundry/sonde-go/events"
+  "github.com/cloudfoundry-community/go-cfclient"
 )
 
 type Event struct {
@@ -41,12 +42,15 @@ type MemoryDetails struct {
 var MemoryMap = make(map[int32]MemoryDetails)
 
 var LastScaleTime = time.Now().UnixNano()
-var TimeFirstOverThreshold int64 = 1 
+var TimeFirstOverThreshold int64 = 1
 
 var appName = os.Getenv("APPLICATION_NAME")
 var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
 var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
 var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
+
+var gcfClient *cfClient.Client;
+
 
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
@@ -58,7 +62,7 @@ func ProcessEvents(in chan *events.Envelope) {
 
 func processEvent(msg *events.Envelope) {
 
-        
+
         eventType := msg.GetEventType()
 
 	// only container events will contain the memory statistics
@@ -71,7 +75,7 @@ func processEvent(msg *events.Envelope) {
 
 		event.AnnotateWithAppData()
 
-		// once the event has been annotated with application data, lets see if 
+		// once the event has been annotated with application data, lets see if
 		// its for the app we care about
 
 		if event.Fields["cf_app_name"] == appName {
@@ -159,7 +163,7 @@ func (e Event) ShipEvent() {
 func CheckMemoryAverage() {
 
 	var sum uint64 = 0
-	count := 0	
+	count := 0
 
 	// loop over every event in the map
 
@@ -182,14 +186,14 @@ func CheckMemoryAverage() {
 		average := float64(sum) / float64(count)
 		averageInMb := average / 1000000
 
-		fmt.Printf("Average Memory consumption for all running instances is %f\n", averageInMb)	
+		fmt.Printf("Average Memory consumption for all running instances is %f\n", averageInMb)
 
 		// see if that average is more than our threshold
 
 		if int(averageInMb) > memoryThresholdLimit {
 
 			// check to see if this is the first crossing of the memory threshold by
-			// checking that TimeFirstOverThreshold value.  1 is a magic number to 
+			// checking that TimeFirstOverThreshold value.  1 is a magic number to
 			// note that it hasn't been crossed yet
 
 			if TimeFirstOverThreshold == 1 {
@@ -198,7 +202,7 @@ func CheckMemoryAverage() {
 
 				// we've been over that threshold for at least a few seconds, lets find
 				// out how long we've been over the memory threshold
-			
+
 				thresholdElapsed := time.Now().UnixNano() - TimeFirstOverThreshold
 				thresholdElapsedSeconds := thresholdElapsed / 1000000000
 
@@ -216,7 +220,7 @@ func CheckMemoryAverage() {
 
                         		if scaleElapsedSeconds > int64(timeBetweenScales) {
 
-						// we've been over the threshold for a while and haven't scaled 
+						// we've been over the threshold for a while and haven't scaled
 						// for a while.  time to scale it up.
 
                                 		fmt.Printf("Here is where we'd make a call to scale up\n")
@@ -249,4 +253,9 @@ func updateMemoryMap(ctrEvent Event) {
 	memDetails.LastTime = lastTime
 
 	MemoryMap[instance] = memDetails
+}
+
+func SetCfClient(cfClient *cfClient.Client) {
+	gcfClient = cfClient
+
 }
