@@ -109,7 +109,7 @@ func main() {
 
 	firehose := firehose.CreateFirehoseChan(cfClient.Endpoint.DopplerEndpoint, cfClient.GetToken(), *subscriptionID, *skipSSLValidation)
 	if firehose != nil {
-		logger.Println("Firehose Subscription Succesfull! Routing events...")
+		logger.Println("Firehose Subscription Succesful! Routing events...")
 		//usageevents.ProcessEvents(firehose)
 		scaling.SetCfClient(cfClient)
     scaling.ProcessEvents(firehose)
