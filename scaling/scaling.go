@@ -231,6 +231,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 						// we've been over the threshold for a while and haven't scaled
 						// for a while.  time to scale it up.
                               			scaleApp(count,ctrEvent)
+						LastScaleTime = time.Now().UnixNano()
 
                         		} else {
 						fmt.Printf("**************** Need to scale but already did recently, waiting a bit...  *********************\n")
