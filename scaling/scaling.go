@@ -17,15 +17,20 @@ limitations under the License.
 package scaling
 
 import (
-        "os"
+  "os"
 	"strconv"
 	"fmt"
 	"time"
+  "bytes"
+  //"io/ioutil"
+  "net/http"
+  "crypto/tls"
+
 
 	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
 	"github.com/Sirupsen/logrus"
   "github.com/cloudfoundry/sonde-go/events"
-  "github.com/cloudfoundry-community/go-cfclient"
+  cfClient "github.com/cloudfoundry-community/go-cfclient"
 )
 
 type Event struct {
@@ -49,7 +54,7 @@ var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
 var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
 var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
 
-var gcfClient *cfClient.Client;
+var gcfClient *cfClient.Client
 
 
 // ProcessEvents churns through the firehose channel, processing incoming events.
@@ -79,8 +84,8 @@ func processEvent(msg *events.Envelope) {
 		// its for the app we care about
 
 		if event.Fields["cf_app_name"] == appName {
-			updateMemoryMap(event)
-			CheckMemoryAverage()
+      updateMemoryMap(event)
+			CheckMemoryAverage(event)
 		}
 	}
 }
@@ -160,7 +165,7 @@ func (e Event) ShipEvent() {
 	logrus.WithFields(e.Fields).Info(e.Msg)
 }
 
-func CheckMemoryAverage() {
+func CheckMemoryAverage(ctrEvent Event) {
 
 	var sum uint64 = 0
 	count := 0
@@ -222,8 +227,8 @@ func CheckMemoryAverage() {
 
 						// we've been over the threshold for a while and haven't scaled
 						// for a while.  time to scale it up.
+                              scaleApp(count,ctrEvent)
 
-                                		fmt.Printf("Here is where we'd make a call to scale up\n")
                         		}
 				}
 			}
@@ -240,6 +245,48 @@ func CheckMemoryAverage() {
 
 }
 
+func scaleApp(aiCount int, ctrEvent Event) {
+  token := gcfClient.GetToken()
+  //fmt.Printf("Token: %s\n", token)
+
+  cf_app_id := ctrEvent.Fields["cf_app_id"]
+	appGuid := ""
+	if cf_app_id != nil {
+		appGuid = fmt.Sprintf("%s", cf_app_id)
+	}
+
+  url := fmt.Sprintf("https://api.bosh-lite.com/v2/apps/%s", appGuid)
+  //fmt.Println("URL:", url)
+
+  scaleCount := aiCount + 1
+
+  fmt.Printf(">>>>>>>>>>>> Scaling from %d instance(s) to %d instances\n", aiCount, scaleCount)
+
+  var jsonStr = []byte(fmt.Sprintf(`{"instances":%d}`,scaleCount))
+  req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonStr))
+  req.Header.Set("Authorization", token)
+  req.Header.Set("Host", "bosh-lite.com")
+  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+  req.Header.Set("Cookie", "")
+
+
+  // need to figure out a better way to skip the ssl validation
+  tr := &http.Transport{
+      TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+  }
+  client := &http.Client{Transport: tr}
+  resp, err := client.Do(req)
+  if err != nil {
+      panic(err)
+  }
+  defer resp.Body.Close()
+
+  //fmt.Println("response Status:", resp.Status)
+  //fmt.Println("response Headers:", resp.Header)
+  //body, _ := ioutil.ReadAll(resp.Body)
+  //fmt.Println("response Body:", string(body))
+
+}
 
 func updateMemoryMap(ctrEvent Event) {
 

@@ -111,7 +111,8 @@ func main() {
 	if firehose != nil {
 		logger.Println("Firehose Subscription Succesfull! Routing events...")
 		//usageevents.ProcessEvents(firehose)
-                scaling.ProcessEvents(firehose)
+		scaling.SetCfClient(cfClient)
+    scaling.ProcessEvents(firehose)
 	} else {
 		logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
 	}
