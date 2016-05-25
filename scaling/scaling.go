@@ -260,7 +260,9 @@ func scaleApp(aiCount int, ctrEvent Event) {
 		appGuid = fmt.Sprintf("%s", cf_app_id)
 	}
 
-  url := fmt.Sprintf("https://api.bosh-lite.com/v2/apps/%s", appGuid)
+  apiEndpoint := os.Getenv("API_ENDPOINT")
+
+  url := fmt.Sprintf("%s/v2/apps/%s", apiEndpoint, appGuid)
   //fmt.Println("URL:", url)
 
   scaleCount := aiCount + 1
