@@ -203,6 +203,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 
 			if TimeFirstOverThreshold == 1 {
 				TimeFirstOverThreshold = time.Now().UnixNano()
+				fmt.Printf("****************   First crossing of memory threshold! *********************\n")
 			} else {
 
 				// we've been over that threshold for at least a few seconds, lets find
@@ -217,6 +218,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 
 					// we've been over the memory threshold for quite a while.  Let's
 					// see how long its been since we've scaled
+					fmt.Printf("**************** Been over memory Threshold for too long!  *********************\n")
 
 					scaleElapsed := time.Now().UnixNano() - LastScaleTime
                         		scaleElapsedSeconds := scaleElapsed / 1000000000
@@ -224,12 +226,15 @@ func CheckMemoryAverage(ctrEvent Event) {
                         		fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
 
                         		if scaleElapsedSeconds > int64(timeBetweenScales) {
+						fmt.Printf("**************** Need to scale!  *********************\n")
 
 						// we've been over the threshold for a while and haven't scaled
 						// for a while.  time to scale it up.
-                              scaleApp(count,ctrEvent)
+                              			scaleApp(count,ctrEvent)
 
-                        		}
+                        		} else {
+						fmt.Printf("**************** Need to scale but already did recently, waiting a bit...  *********************\n")
+					}
 				}
 			}
 
@@ -260,7 +265,7 @@ func scaleApp(aiCount int, ctrEvent Event) {
 
   scaleCount := aiCount + 1
 
-  fmt.Printf(">>>>>>>>>>>> Scaling from %d instance(s) to %d instances\n", aiCount, scaleCount)
+  fmt.Printf("**************** Scaling from %d instance(s) to %d instances **************************\n", aiCount, scaleCount)
 
   var jsonStr = []byte(fmt.Sprintf(`{"instances":%d}`,scaleCount))
   req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonStr))
