@@ -273,7 +273,7 @@ func scaleApp(aiCount int, ctrEvent Event) {
   var jsonStr = []byte(fmt.Sprintf(`{"instances":%d}`,scaleCount))
   req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonStr))
   req.Header.Set("Authorization", token)
-  req.Header.Set("Host", "bosh-lite.com")
+  //req.Header.Set("Host", "bosh-lite.com")
   req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
   req.Header.Set("Cookie", "")
 
