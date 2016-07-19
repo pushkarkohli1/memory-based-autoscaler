@@ -20,25 +20,39 @@ import (
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/unrolled/render"
+
+	cfClient "github.com/cloudfoundry-community/go-cfclient"
 )
 
-// NewServer configures and returns a Server.
-func NewServer() *negroni.Negroni {
+var GCFClient *cfClient.Client
 
-	//formatter := render.New(render.Options{
-//		IndentJSON: true,
-//	})
+// NewServer configures and returns a Server.
+func NewServer(cfClient *cfClient.Client) *negroni.Negroni {
+
+	GCFClient = cfClient
+
+	formatter := render.New(render.Options{
+		IndentJSON: true,
+	})
 
 	n := negroni.Classic()
 	mx := mux.NewRouter()
 
-//	initRoutes(mx, formatter)
+	initRoutes(mx, formatter)
 
 	n.UseHandler(mx)
 	return n
 }
 
 func initRoutes(mx *mux.Router, formatter *render.Render) {
-//	mx.HandleFunc("/api/apps/{org}/{space}/{app}", singleAppHandler(formatter)).Methods("GET")
-//	mx.HandleFunc("/api/apps", appCollectionHandler(formatter)).Methods("GET")
+	//mx.HandleFunc("/api/apps/{org}/{space}/{app}", singleAppHandler(formatter)).Methods("GET")
+	mx.HandleFunc("/v2/catalog", catalogHandler(formatter)).Methods("GET")
+
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}", getServiceInstanceHandler(formatter)).Methods("GET")
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}", createServiceInstanceHandler(formatter)).Methods("PUT")
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}", removeServiceInstanceHandler(formatter)).Methods("DELETE")
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", bindServiceInstanceHandler(formatter)).Methods("PUT")
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", unbindServiceInstanceHandler(formatter)).Methods("DELETE")
+	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", BoundActionHandler(formatter)).Methods("POST")
+
 }
