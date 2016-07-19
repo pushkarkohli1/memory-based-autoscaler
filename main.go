@@ -27,10 +27,8 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
-	"github.com/cloudfoundry-community/firehose-to-syslog/firehose"
 	"github.com/cloudfoundry-community/go-cfclient"
 
-	"github.com/ECSTeam/memory-based-autoscaler/scaling"
 	"github.com/ECSTeam/memory-based-autoscaler/service"
 )
 
@@ -63,7 +61,7 @@ func main() {
 
 	logger := log.New(os.Stdout, "", 0)
 
-	logger.Println(fmt.Sprintf("Starting app-usage-nozzle %s ", version))
+	logger.Println(fmt.Sprintf("Starting memory based autoscaler %s ", version))
 
 	c := cfclient.Config{
 		ApiAddress:        *apiEndpoint,
@@ -72,12 +70,6 @@ func main() {
 		SkipSslValidation: *skipSSLValidation,
 	}
 	cfClient := cfclient.NewClient(&c)
-
-	// Start web server
-	go func() {
-		server := service.NewServer(cfClient)
-		server.Run(":" + port)
-	}()
 
 	if len(*dopplerEndpoint) > 0 {
 		cfClient.Endpoint.DopplerEndpoint = *dopplerEndpoint
@@ -97,6 +89,12 @@ func main() {
 	caching.SetAppDb(db)
 	caching.CreateBucket()
 
+	// Start web server
+	//go func() {
+	server := service.NewServer(cfClient)
+	server.Run(":" + port)
+	//}()
+
 	// Ticker Polling the CC every X sec
 	//ccPolling := time.NewTicker(*tickerTime)
 
@@ -106,14 +104,15 @@ func main() {
 	//			apps = caching.GetAllApp()
 	//		}
 	//	}()
-
-	firehose := firehose.CreateFirehoseChan(cfClient.Endpoint.DopplerEndpoint, cfClient.GetToken(), *subscriptionID, *skipSSLValidation)
-	if firehose != nil {
-		logger.Println("Firehose Subscription Succesful! Routing events...")
-		//usageevents.ProcessEvents(firehose)
-		scaling.SetCfClient(cfClient)
-		scaling.ProcessEvents(firehose)
-	} else {
-		logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
-	}
+	/*
+		firehose := firehose.CreateFirehoseChan(cfClient.Endpoint.DopplerEndpoint, cfClient.GetToken(), *subscriptionID, *skipSSLValidation)
+		if firehose != nil {
+			logger.Println("Firehose Subscription Succesful! Routing events...")
+			//usageevents.ProcessEvents(firehose)
+			scaling.SetCfClient(cfClient)
+			scaling.ProcessEvents(firehose)
+		} else {
+			logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
+		}
+	*/
 }
