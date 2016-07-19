@@ -30,8 +30,8 @@ import (
 	"github.com/cloudfoundry-community/firehose-to-syslog/firehose"
 	"github.com/cloudfoundry-community/go-cfclient"
 
-        "github.com/ECSTeam/memory-based-autoscaler/scaling"
-        "github.com/ECSTeam/memory-based-autoscaler/service"
+	"github.com/ECSTeam/memory-based-autoscaler/scaling"
+	"github.com/ECSTeam/memory-based-autoscaler/service"
 )
 
 var (
@@ -58,12 +58,6 @@ func main() {
 		port = "3000"
 	}
 
-	// Start web server
-	go func() {
-		server := service.NewServer()
-		server.Run(":" + port)
-	}()
-
 	kingpin.Version(version)
 	kingpin.Parse()
 
@@ -78,6 +72,12 @@ func main() {
 		SkipSslValidation: *skipSSLValidation,
 	}
 	cfClient := cfclient.NewClient(&c)
+
+	// Start web server
+	go func() {
+		server := service.NewServer(cfClient)
+		server.Run(":" + port)
+	}()
 
 	if len(*dopplerEndpoint) > 0 {
 		cfClient.Endpoint.DopplerEndpoint = *dopplerEndpoint
@@ -101,18 +101,18 @@ func main() {
 	//ccPolling := time.NewTicker(*tickerTime)
 
 	//go func() {
-//		for range ccPolling.C {
-//			logger.Println("Re-loading application cache.")
-//			apps = caching.GetAllApp()
-//		}
-//	}()
+	//		for range ccPolling.C {
+	//			logger.Println("Re-loading application cache.")
+	//			apps = caching.GetAllApp()
+	//		}
+	//	}()
 
 	firehose := firehose.CreateFirehoseChan(cfClient.Endpoint.DopplerEndpoint, cfClient.GetToken(), *subscriptionID, *skipSSLValidation)
 	if firehose != nil {
 		logger.Println("Firehose Subscription Succesful! Routing events...")
 		//usageevents.ProcessEvents(firehose)
 		scaling.SetCfClient(cfClient)
-    scaling.ProcessEvents(firehose)
+		scaling.ProcessEvents(firehose)
 	} else {
 		logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
 	}
