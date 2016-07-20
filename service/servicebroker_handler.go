@@ -17,6 +17,16 @@ type AppData struct {
 	AppAction string `json:"action"`
 }
 
+type BindResource struct {
+	AppGUID string `json:"app_guid"`
+}
+
+type BindPutData struct {
+	ServiceID string `json:"service_id"`
+	PlanID    string `json:"plan_id"`
+	AppGUID   string `json:"app_guid"`
+}
+
 type Service struct {
 	Name           string   `json:"name"`
 	Id             string   `json:"id"`
@@ -174,13 +184,19 @@ func bindServiceInstanceHandler(formatter *render.Render) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("Bind Service Instance")
 
+		b, _ := ioutil.ReadAll(req.Body)
+
+		var putData BindPutData
+
+		json.Unmarshal(b, &putData)
+
 		serviceInstanceGuid := ExtractVarsFromRequest(req, "service_instance_guid")
 		bindingId := ExtractVarsFromRequest(req, "service_binding_guid")
 
 		scalerInst, ok := ScalerMap[serviceInstanceGuid]
 
 		if ok {
-			scalerInst.SetAppData(bindingId)
+			scalerInst.SetAppData(bindingId, putData.AppGUID)
 		}
 
 		credential := Credential{
