@@ -1,5 +1,5 @@
 /*
-Copyright 2016 Pivotal
+Copyright 2016 ECSTeam
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -89,30 +89,7 @@ func main() {
 	caching.SetAppDb(db)
 	caching.CreateBucket()
 
-	// Start web server
-	//go func() {
 	server := service.NewServer(cfClient)
 	server.Run(":" + port)
-	//}()
 
-	// Ticker Polling the CC every X sec
-	//ccPolling := time.NewTicker(*tickerTime)
-
-	//go func() {
-	//		for range ccPolling.C {
-	//			logger.Println("Re-loading application cache.")
-	//			apps = caching.GetAllApp()
-	//		}
-	//	}()
-	/*
-		firehose := firehose.CreateFirehoseChan(cfClient.Endpoint.DopplerEndpoint, cfClient.GetToken(), *subscriptionID, *skipSSLValidation)
-		if firehose != nil {
-			logger.Println("Firehose Subscription Succesful! Routing events...")
-			//usageevents.ProcessEvents(firehose)
-			scaling.SetCfClient(cfClient)
-			scaling.ProcessEvents(firehose)
-		} else {
-			logger.Fatal("Failed connecting to Firehose...Please check settings and try again!")
-		}
-	*/
 }
