@@ -16,23 +16,13 @@ limitations under the License.
 
 package scaling
 
-import (
-  "os"
-	"strconv"
-	"fmt"
-	"time"
-  "bytes"
-  //"io/ioutil"
-  "net/http"
-  "crypto/tls"
+import
 
+//"io/ioutil"
 
-	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
-	"github.com/Sirupsen/logrus"
-  "github.com/cloudfoundry/sonde-go/events"
-  cfClient "github.com/cloudfoundry-community/go-cfclient"
-)
+cfClient "github.com/cloudfoundry-community/go-cfclient"
 
+/*
 type Event struct {
 	Fields logrus.Fields
 	Msg    string
@@ -40,7 +30,7 @@ type Event struct {
 }
 
 type MemoryDetails struct {
-	Memory uint64
+	Memory   uint64
 	LastTime int64
 }
 
@@ -48,15 +38,16 @@ var MemoryMap = make(map[int32]MemoryDetails)
 
 var LastScaleTime = time.Now().UnixNano()
 var TimeFirstOverThreshold int64 = 1
+*/
 
-var appName = os.Getenv("APPLICATION_NAME")
-var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
-var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
-var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
+//var appName = os.Getenv("APPLICATION_NAME")
+//var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
+//var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
+//var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
 
 var gcfClient *cfClient.Client
 
-
+/*
 // ProcessEvents churns through the firehose channel, processing incoming events.
 func ProcessEvents(in chan *events.Envelope) {
 
@@ -89,7 +80,8 @@ func processEvent(msg *events.Envelope) {
 		}
 	}
 }
-
+*/
+/*
 // anntoates an event with the container metrics from the message
 
 func ContainerMetric(msg *events.Envelope) Event {
@@ -176,7 +168,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 		meminMb := value.Memory / 1000000
 		fmt.Printf("Memory Map output:  instance, bytes, lastTime = %d, %d, %d\n", key, meminMb, value.LastTime)
 		totalElapsed := time.Now().UnixNano() - value.LastTime
-                elapsedSeconds := totalElapsed / 1000000000
+		elapsedSeconds := totalElapsed / 1000000000
 		// elapsedSeconds shows the last time the map was updated with a container metric.
 		// if that's more than ten minutes old, we assume the app instance has gone away
 		// and shouldn't be accounted for in the average calculations
@@ -221,19 +213,19 @@ func CheckMemoryAverage(ctrEvent Event) {
 					fmt.Printf("**************** Been over memory Threshold for too long!  *********************\n")
 
 					scaleElapsed := time.Now().UnixNano() - LastScaleTime
-                        		scaleElapsedSeconds := scaleElapsed / 1000000000
+					scaleElapsedSeconds := scaleElapsed / 1000000000
 
-                        		fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
+					fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
 
-                        		if scaleElapsedSeconds > int64(timeBetweenScales) {
+					if scaleElapsedSeconds > int64(timeBetweenScales) {
 						fmt.Printf("**************** Need to scale!  *********************\n")
 
 						// we've been over the threshold for a while and haven't scaled
 						// for a while.  time to scale it up.
-                              			scaleApp(count,ctrEvent)
+						scaleApp(count, ctrEvent)
 						LastScaleTime = time.Now().UnixNano()
 
-                        		} else {
+					} else {
 						fmt.Printf("**************** Need to scale but already did recently, waiting a bit...  *********************\n")
 					}
 				}
@@ -252,47 +244,46 @@ func CheckMemoryAverage(ctrEvent Event) {
 }
 
 func scaleApp(aiCount int, ctrEvent Event) {
-  token := gcfClient.GetToken()
-  //fmt.Printf("Token: %s\n", token)
+	token := gcfClient.GetToken()
+	//fmt.Printf("Token: %s\n", token)
 
-  cf_app_id := ctrEvent.Fields["cf_app_id"]
+	cf_app_id := ctrEvent.Fields["cf_app_id"]
 	appGuid := ""
 	if cf_app_id != nil {
 		appGuid = fmt.Sprintf("%s", cf_app_id)
 	}
 
-  apiEndpoint := os.Getenv("API_ENDPOINT")
+	apiEndpoint := os.Getenv("API_ENDPOINT")
 
-  url := fmt.Sprintf("%s/v2/apps/%s", apiEndpoint, appGuid)
-  //fmt.Println("URL:", url)
+	url := fmt.Sprintf("%s/v2/apps/%s", apiEndpoint, appGuid)
+	//fmt.Println("URL:", url)
 
-  scaleCount := aiCount + 1
+	scaleCount := aiCount + 1
 
-  fmt.Printf("**************** Scaling from %d instance(s) to %d instances **************************\n", aiCount, scaleCount)
+	fmt.Printf("**************** Scaling from %d instance(s) to %d instances **************************\n", aiCount, scaleCount)
 
-  var jsonStr = []byte(fmt.Sprintf(`{"instances":%d}`,scaleCount))
-  req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonStr))
-  req.Header.Set("Authorization", token)
-  //req.Header.Set("Host", "bosh-lite.com")
-  req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-  req.Header.Set("Cookie", "")
+	var jsonStr = []byte(fmt.Sprintf(`{"instances":%d}`, scaleCount))
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(jsonStr))
+	req.Header.Set("Authorization", token)
+	//req.Header.Set("Host", "bosh-lite.com")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Cookie", "")
 
+	// need to figure out a better way to skip the ssl validation
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
 
-  // need to figure out a better way to skip the ssl validation
-  tr := &http.Transport{
-      TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-  }
-  client := &http.Client{Transport: tr}
-  resp, err := client.Do(req)
-  if err != nil {
-      panic(err)
-  }
-  defer resp.Body.Close()
-
-  //fmt.Println("response Status:", resp.Status)
-  //fmt.Println("response Headers:", resp.Header)
-  //body, _ := ioutil.ReadAll(resp.Body)
-  //fmt.Println("response Body:", string(body))
+	//fmt.Println("response Status:", resp.Status)
+	//fmt.Println("response Headers:", resp.Header)
+	//body, _ := ioutil.ReadAll(resp.Body)
+	//fmt.Println("response Body:", string(body))
 
 }
 
@@ -309,7 +300,7 @@ func updateMemoryMap(ctrEvent Event) {
 
 	MemoryMap[instance] = memDetails
 }
-
+*/
 func SetCfClient(cfClient *cfClient.Client) {
 	gcfClient = cfClient
 
