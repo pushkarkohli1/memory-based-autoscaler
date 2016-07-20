@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -30,6 +29,8 @@ import (
 	"github.com/cloudfoundry-community/firehose-to-syslog/firehose"
 	cfClient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/cloudfoundry/sonde-go/events"
+
+	model "github.com/ECSTeam/memory-based-autoscaler/model"
 )
 
 //"io/ioutil"
@@ -51,9 +52,9 @@ type MemoryDetails struct {
 
 var MemoryMap = make(map[int32]MemoryDetails)
 
-var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
-var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
-var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
+//var memoryThresholdLimit, _ = strconv.Atoi(os.Getenv("MEMORY_THRESHOLD_LIMIT"))
+//var timeBetweenScales, _ = strconv.Atoi(os.Getenv("TIME_BETWEEN_SCALES"))
+//var timeOverThreshold, _ = strconv.Atoi(os.Getenv("TIME_OVER_THRESHOLD"))
 
 var LastScaleTime = time.Now().UnixNano()
 var TimeFirstOverThreshold int64 = 1
@@ -61,6 +62,8 @@ var TimeFirstOverThreshold int64 = 1
 var gcfClientScaler *cfClient.Client
 var appGuid string
 var bindingGuid string
+
+var appData model.AppData
 
 func (s *Scaler) Hello() string {
 	fmt.Println("Hello world ")
@@ -70,12 +73,32 @@ func (s *Scaler) Hello() string {
 
 func (s *Scaler) Initialize(cfClient *cfClient.Client) {
 	gcfClientScaler = cfClient
+
+	appData.MaxInstanceThreshold = 10
+	appData.MinInstanceThreshold = 2
+	appData.MaxMemoryThreshold = 100
+	appData.MinMemoryThreshold = 30
+	appData.TimeBetweenScales = 120
+	appData.TimeOverThreshold = 60
 }
 
-func (s *Scaler) SetAppData(bindingguid string, appguid string) {
+func (s *Scaler) SetAppIds(bindingguid string, appguid string) {
 	appGuid = appguid
 	bindingGuid = bindingguid
 	fmt.Println("Setting App Data")
+}
+
+func (s *Scaler) SetAppData(inAppData model.AppData) {
+	appData.MaxInstanceThreshold = inAppData.MaxInstanceThreshold
+	appData.MinInstanceThreshold = inAppData.MinInstanceThreshold
+	appData.MaxMemoryThreshold = inAppData.MaxMemoryThreshold
+	appData.MinMemoryThreshold = inAppData.MinMemoryThreshold
+	appData.TimeBetweenScales = inAppData.TimeBetweenScales
+	appData.TimeOverThreshold = inAppData.TimeOverThreshold
+}
+
+func (s *Scaler) GetAppData() model.AppData {
+	return appData
 }
 
 func (s *Scaler) StartListening(appName string) {
@@ -228,7 +251,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 
 		// see if that average is more than our threshold
 
-		if int(averageInMb) > memoryThresholdLimit {
+		if int(averageInMb) > appData.MaxMemoryThreshold {
 
 			// check to see if this is the first crossing of the memory threshold by
 			// checking that TimeFirstOverThreshold value.  1 is a magic number to
@@ -247,7 +270,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 
 				fmt.Printf("seconds since first threshold crossing is %d\n", thresholdElapsedSeconds)
 
-				if thresholdElapsedSeconds > int64(timeOverThreshold) {
+				if thresholdElapsedSeconds > int64(appData.TimeOverThreshold) {
 
 					// we've been over the memory threshold for quite a while.  Let's
 					// see how long its been since we've scaled
@@ -258,7 +281,7 @@ func CheckMemoryAverage(ctrEvent Event) {
 
 					fmt.Printf("seconds since last scale is %d\n", scaleElapsedSeconds)
 
-					if scaleElapsedSeconds > int64(timeBetweenScales) {
+					if scaleElapsedSeconds > int64(appData.TimeBetweenScales) {
 						fmt.Printf("**************** Need to scale!  *********************\n")
 
 						// we've been over the threshold for a while and haven't scaled
