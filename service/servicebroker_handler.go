@@ -23,15 +23,11 @@ import (
 	"net/http"
 	"os"
 
+	model "github.com/ECSTeam/memory-based-autoscaler/model"
 	scaler "github.com/ECSTeam/memory-based-autoscaler/scaling"
 	"github.com/gorilla/mux"
 	"github.com/unrolled/render"
 )
-
-type AppData struct {
-	AppName   string `json:"appname"`
-	AppAction string `json:"action"`
-}
 
 type BindResource struct {
 	AppGUID string `json:"app_guid"`
@@ -212,7 +208,7 @@ func bindServiceInstanceHandler(formatter *render.Render) http.HandlerFunc {
 		scalerInst, ok := ScalerMap[serviceInstanceGuid]
 
 		if ok {
-			scalerInst.SetAppData(bindingId, putData.AppGUID)
+			scalerInst.SetAppIds(bindingId, putData.AppGUID)
 		}
 
 		credential := Credential{
@@ -246,12 +242,12 @@ func unbindServiceInstanceHandler(formatter *render.Render) http.HandlerFunc {
 
 func BoundActionHandler(formatter *render.Render) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		fmt.Println("Starting to listen...")
+		fmt.Println("In the bound action handler...")
 
 		serviceInstanceGuid := ExtractVarsFromRequest(req, "service_instance_guid")
 		//bindingId := ExtractVarsFromRequest(req, "service_binding_guid")
 
-		var appdata AppData
+		var appdata model.AppData
 
 		b, _ := ioutil.ReadAll(req.Body)
 		json.Unmarshal(b, &appdata)
@@ -266,6 +262,31 @@ func BoundActionHandler(formatter *render.Render) http.HandlerFunc {
 			} else {
 				fmt.Println("action not supported")
 			}
+		}
+
+	}
+}
+
+func GetAppDataHandler(formatter *render.Render) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		serviceInstanceGuid := ExtractVarsFromRequest(req, "service_instance_guid")
+
+		scalerInst, ok := ScalerMap[serviceInstanceGuid]
+
+		w.Header().Add("Access-Control-Allow-Origin", req.Header.Get("Origin"))
+		w.Header().Add("Access-Control-Allow-Methods", "GET")
+
+		if ok {
+			appData := scalerInst.GetAppData()
+
+			formatter.JSON(w, http.StatusOK, appData)
+		} else {
+
+			var response DeleteServiceBindingResponse
+			response.Status = "Service ID not found"
+
+			formatter.JSON(w, http.StatusNotFound, response)
 		}
 
 	}
