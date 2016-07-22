@@ -1,11 +1,12 @@
 applications:
-- path: .
+- path: builds 
   memory: 1024MB
   instances: 1
   name: memory-based-autoscaler 
   disk_quota: 1024M
   command: memory-based-autoscaler 
-  buildpack: https://github.com/cloudfoundry/go-buildpack.git
+  #buildpack: https://github.com/cloudfoundry/go-buildpack.git 
+  buildpack: binary_buildpack
   env:
     APPLICATION_NAME: dummy
     MEMORY_THRESHOLD_LIMIT: 110
