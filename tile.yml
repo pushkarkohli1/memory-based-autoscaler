@@ -30,6 +30,9 @@ packages:
     memory: 512M
     buildpack: https://github.com/cloudfoundry/go-buildpack.git 
   needs_cf_credentials: true
+  auto_services:
+  - name: p-mysql
+    plan: 100mb-dev
   enable_global_access_to_plans: true
 
 # Include stemcell criteria if you don't want to accept the default.
@@ -74,6 +77,6 @@ forms:
 # for any of your packages above, with services provided by other
 # products.
 #
-# requires_product_versions:
-# - name: p-mysql
-#   version: '~> 1.7'
+requires_product_versions:
+- name: p-mysql
+  version: '~> 1.7'
