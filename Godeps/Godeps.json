@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/ECSTeam/memory-based-autoscaler",
-	"GoVersion": "go1.6.2",
+	"GoVersion": "go1.6",
 	"GodepVersion": "v67",
 	"Deps": [
 		{
@@ -58,10 +58,6 @@
 			"Rev": "fa5067413ddd430b4c19f08a11bc93415ebb1672"
 		},
 		{
-			"ImportPath": "github.com/cloudfoundry-samples/go_service_broker/model",
-			"Rev": "5a0c01eb051f55e7c3b4d51df3206c2920fcb7b4"
-		},
-		{
 			"ImportPath": "github.com/cloudfoundry/noaa",
 			"Rev": "87a5a9673cf6b87f2d2167a1e1a4fecb7e32986f"
 		},
@@ -77,6 +73,11 @@
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1.0-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-156-g7c7f556",
+			"Rev": "7c7f556282622f94213bc028b4d0a7b6151ba239"
 		},
 		{
 			"ImportPath": "github.com/gogo/protobuf/gogoproto",
