@@ -20,15 +20,22 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/CrowdSurge/banner"
+	"github.com/boltdb/bolt"
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/boltdb/bolt"
+	"database/sql"
+
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/cloudfoundry-community/firehose-to-syslog/caching"
 	"github.com/cloudfoundry-community/go-cfclient"
 
+	"github.com/ECSTeam/memory-based-autoscaler/database"
+	"github.com/ECSTeam/memory-based-autoscaler/model"
 	"github.com/ECSTeam/memory-based-autoscaler/service"
 )
 
@@ -77,16 +84,55 @@ func main() {
 	logger.Println(fmt.Sprintf("Using %s as doppler endpoint", cfClient.Endpoint.DopplerEndpoint))
 
 	//Use bolt for in-memory  - file caching
-	db, err := bolt.Open(*boltDatabasePath, 0600, &bolt.Options{Timeout: 3 * time.Second})
+
+	bdb, err := bolt.Open(*boltDatabasePath, 0600, &bolt.Options{Timeout: 3 * time.Second})
 	if err != nil {
 		logger.Fatal("Error opening bolt db: ", err)
 		os.Exit(1)
 
 	}
+	defer bdb.Close()
+
+	//var vcap *model.VcapServices
+
+	_, err = model.PopulateVcapServices()
+
+	if err != nil {
+		fmt.Println("got an error in parsing vcap")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	userProvided := model.VcapService.UserProvided[0]
+
+	var connection string = userProvided.Credentials.Username
+
+	connection = connection + ":"
+	connection = connection + userProvided.Credentials.Password
+	connection = connection + "@tcp("
+	connection = connection + userProvided.Credentials.Host
+	connection = connection + ":"
+	connection = connection + strconv.Itoa(userProvided.Credentials.Port)
+	connection = connection + ")/"
+	connection = connection + userProvided.Credentials.Name
+
+	//fmt.Println(connection)
+
+	//fmt.Println("That was the connection string")
+
+	db, err := sql.Open("mysql",
+		connection)
+
+	if err != nil {
+		os.Exit(1)
+	}
+
+	database.InitializeDatabase(db, userProvided.Credentials.Name)
+
 	defer db.Close()
 
 	caching.SetCfClient(cfClient)
-	caching.SetAppDb(db)
+	caching.SetAppDb(bdb)
 	caching.CreateBucket()
 
 	server := service.NewServer(cfClient)
