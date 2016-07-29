@@ -78,8 +78,8 @@ func (s *Scaler) Initialize(cfClient *cfClient.Client) {
 	appData.MinInstanceThreshold = 2
 	appData.MaxMemoryThreshold = 100
 	appData.MinMemoryThreshold = 30
-	appData.TimeBetweenScales = 120
-	appData.TimeOverThreshold = 60
+	appData.TimeBetweenScales = 75
+	appData.TimeOverThreshold = 55
 }
 
 func (s *Scaler) SetAppIds(bindingguid string, appguid string) {
@@ -242,7 +242,11 @@ func CheckMemoryAverage(ctrEvent Event) {
 		}
 	}
 
-	if count > 0 {
+	if (count < appData.MinInstanceThreshold) && (count > 0) {
+		fmt.Printf("**************** Under minimum instances, scaling to %d **************************\n", appData.MinInstanceThreshold)
+		scaleApp(appData.MinInstanceThreshold-1, ctrEvent)
+		LastScaleTime = time.Now().UnixNano()
+	} else if count > 0 {
 
 		average := float64(sum) / float64(count)
 		averageInMb := average / 1000000
@@ -317,7 +321,7 @@ func scaleApp(aiCount int, ctrEvent Event) {
 		appGuid = fmt.Sprintf("%s", cf_app_id)
 	}
 
-	apiEndpoint := os.Getenv("API_ENDPOINT")
+	apiEndpoint := os.Getenv("CF_TARGET")
 
 	url := fmt.Sprintf("%s/v2/apps/%s", apiEndpoint, appGuid)
 	//fmt.Println("URL:", url)
