@@ -53,7 +53,7 @@ func initRoutes(mx *mux.Router, formatter *render.Render) {
 	mx.HandleFunc("/v2/service_instances/{service_instance_guid}", removeServiceInstanceHandler(formatter)).Methods("DELETE")
 	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", bindServiceInstanceHandler(formatter)).Methods("PUT")
 	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", unbindServiceInstanceHandler(formatter)).Methods("DELETE")
-	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", BoundActionHandler(formatter)).Methods("POST")
-	mx.HandleFunc("/v2/service_instances/{service_instance_guid}/service_bindings/{service_binding_guid}", GetAppDataHandler(formatter)).Methods("GET")
+	mx.HandleFunc("/autoscale/{service_instance_guid}", BoundActionHandler(formatter)).Methods("POST")
+	mx.HandleFunc("/autoscale/{service_instance_guid}", GetAppDataHandler(formatter)).Methods("GET")
 
 }

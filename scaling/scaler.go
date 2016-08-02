@@ -71,6 +71,16 @@ func (s *Scaler) Hello() string {
 	return "hello"
 }
 
+func (s *Scaler) GetCfToken() string {
+	token := gcfClientScaler.GetToken()
+	return token
+}
+
+func (s *Scaler) GetCfClient() *cfClient.Client {
+	return gcfClientScaler
+}
+
+
 func (s *Scaler) Initialize(cfClient *cfClient.Client) {
 	gcfClientScaler = cfClient
 

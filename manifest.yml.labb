@@ -1,0 +1,27 @@
+applications:
+- path: .
+  memory: 512M
+  instances: 1
+  name: memory-based-autoscaler-0.0.30
+  host: memory-based-autoscaler
+  disk_quota: 1024M
+  command: memory-based-autoscaler
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git
+  #buildpack: binary_buildpack
+  env:
+    CC_HOST: https://api.system.labb.ecsteam.io
+    CF_ADMIN_PASSWORD: d11269efa2ab855f8ac8
+    CF_ADMIN_USER: system_services
+    CF_ADMIN_USERNAME: system_services
+    CF_ORG: p-scaling-org
+    CF_SPACE: p-scaling-space
+    CF_TARGET: https://api.system.labb.ecsteam.io
+    LOGIN_HOST: https://login.system.labb.ecsteam.io
+    ROOT: $HOME
+    SCHEME: https
+    SECURITY_USER_NAME: 30ff278a9b749ab7
+    SECURITY_USER_PASSWORD: 6a7a994de221d9f1
+    SKIP_SSL_VALIDATION: true
+    UAA_HOST: https://uaa.system.labb.ecsteam.io
+    VERIFY_SSL: true
+    ADMIN_APP: http://memoryautoscaler-web.apps.labb.ecsteam.io

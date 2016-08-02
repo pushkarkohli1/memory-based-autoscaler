@@ -103,6 +103,7 @@ func main() {
 		os.Exit(1)
 	}
 
+
 	userProvided := model.VcapService.UserProvided[0]
 
 	var connection string = userProvided.Credentials.Username

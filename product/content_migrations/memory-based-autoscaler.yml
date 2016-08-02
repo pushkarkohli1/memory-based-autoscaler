@@ -1,0 +1,105 @@
+---
+product: memory-based-autoscaler
+installation_version: '1.5'
+to_version: 0.0.21
+migrations:
+- from_version: 0.0.1
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.2
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.3
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.4
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.5
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.6
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.7
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.8
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.9
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.10
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.11
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.12
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.13
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.14
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.15
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.16
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.17
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.18
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.19
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21
+- from_version: 0.0.20
+  rules:
+  - type: update
+    selector: product_version
+    to: 0.0.21

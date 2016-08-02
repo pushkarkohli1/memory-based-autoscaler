@@ -22,9 +22,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"crypto/tls"
 
 	model "github.com/ECSTeam/memory-based-autoscaler/model"
 	scaler "github.com/ECSTeam/memory-based-autoscaler/scaling"
+//	cfClient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/gorilla/mux"
 	"github.com/unrolled/render"
 )
@@ -116,6 +118,26 @@ type Catalog struct {
 	Services []Service `json:"services"`
 }
 
+type ServiceInstanceResource struct {
+	Meta   Meta 						`json:"metadata"`
+	Entity ServiceInst		  `json:"entity"`
+}
+
+type Meta struct {
+	Guid string `json:"guid"`
+}
+
+type ServiceInst struct {
+	ServiceBindingsUrl string `json:"service_bindings_url"`
+}
+
+//type CfResourceList struct {
+//	Count     int           `json:"total_results"`
+//	Pages     int           `json:"total_pages"`
+//	NextUrl   string        `json:"next_url"`
+//	Resources []AppResource `json:"resources"`
+//}
+
 var ScalerMap = make(map[string]scaler.Scaler)
 
 func catalogHandler(formatter *render.Render) http.HandlerFunc {
@@ -166,15 +188,20 @@ func createServiceInstanceHandler(formatter *render.Render) http.HandlerFunc {
 
 		ScalerMap[serviceInstanceGuid] = scalerInst
 
-		response := CreateServiceInstanceResponse{
-			Status: "ok",
-		}
+		appName := getAppName(serviceInstanceGuid)
 
 		fmt.Println("Done Creating Service Instance")
 
 		w.Header().Add("Access-Control-Allow-Origin", req.Header.Get("Origin"))
 		w.Header().Add("Access-Control-Allow-Methods", "PUT")
-		formatter.JSON(w, http.StatusOK, response)
+
+		adminApp := os.Getenv("ADMIN_APP")
+
+		result := map[string]string{
+			"dashboard_url":adminApp + "/autoscale/" + serviceInstanceGuid + "/" + appName,
+		}
+		formatter.JSON(w, http.StatusOK, result)
+
 	}
 }
 
@@ -326,4 +353,98 @@ func ReadFile(path string) (content []byte, err error) {
 
 func ExtractVarsFromRequest(r *http.Request, varName string) string {
 	return mux.Vars(r)[varName]
+}
+
+/*
+func getAppName2 (serviceInstanceGuid string) string {
+	var serviceInstanceResource ServiceInstanceResource
+
+	scalerInst := ScalerMap[serviceInstanceGuid]
+
+	gcfClientScaler := scalerInst.GetCfClient()
+
+	url := fmt.Sprintf("/v2/service_instances/%s", serviceInstanceGuid)
+
+	fmt.Println("2******************** url: " + url)
+
+	r := gcfClientScaler.NewRequest("GET", url)
+
+	fmt.Println("******************** req: " + r.Method + " " +  r.RequestURI)
+
+	fmt.Println("******************** starting request...")
+
+  resp, err := gcfClientScaler.DoRequest(r)
+
+	fmt.Println("******************** finished request.")
+
+	resBody, err := ioutil.ReadAll(resp.Body)
+
+	err = json.Unmarshal(resBody, &serviceInstanceResource)
+
+	fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
+
+	serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
+
+	fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
+
+	return "testApp"
+}
+*/
+
+func getAppName (serviceInstanceGuid string) string {
+	scalerInst := ScalerMap[serviceInstanceGuid]
+
+	token := scalerInst.GetCfToken();
+
+	apiEndpoint := os.Getenv("CF_TARGET")
+
+	url := fmt.Sprintf("%s/v2/service_instances/%s", apiEndpoint, serviceInstanceGuid)
+
+	fmt.Println("******************** url: " + url)
+
+	fmt.Println("******************** token: " + token)
+
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Set("Authorization", token)
+	//req.Header.Set("Host", "bosh-lite.com")
+	//req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	//req.Header.Set("Cookie", "")
+	// need to figure out a better way to skip the ssl validation
+
+	fmt.Println("******************** req: " + req.Method + " " +  req.RequestURI)
+
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	fmt.Println("******************** starting request...")
+
+	resp, err := client.Do(req)
+
+	fmt.Println("******************** finished request.")
+
+	if err != nil {
+		panic(err)
+	}
+
+	var serviceInstanceResource ServiceInstanceResource
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("******************** respBody: %v\n", respBody)
+
+	err = json.Unmarshal(respBody, &serviceInstanceResource)
+
+	fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
+
+	serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
+
+	fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
+
+	return "dummy"
+
 }

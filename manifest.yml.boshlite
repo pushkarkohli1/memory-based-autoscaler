@@ -1,0 +1,27 @@
+applications:
+- path: .
+  memory: 512M
+  instances: 1
+  name: memory-based-autoscaler-0.0.30
+  host: memory-based-autoscaler
+  disk_quota: 1024M
+  command: memory-based-autoscaler
+  buildpack: https://github.com/cloudfoundry/go-buildpack.git
+  #buildpack: binary_buildpack
+  env:
+    CC_HOST: https://api.bosh-lite.com
+    CF_ADMIN_PASSWORD: admin
+    CF_ADMIN_USER: admin
+    CF_ADMIN_USERNAME: admin
+    CF_ORG: p-scaling-org
+    CF_SPACE: p-scaling-space
+    CF_TARGET: https://api.bosh-lite.com
+    LOGIN_HOST: https://login.bosh-lite.com
+    ROOT: $HOME
+    SCHEME: https
+    SECURITY_USER_NAME: admin
+    SECURITY_USER_PASSWORD: admin
+    SKIP_SSL_VALIDATION: true
+    UAA_HOST: https://uaa.bosh-lite.com
+    VERIFY_SSL: true
+    ADMIN_APP: http://memoryautoscaler-web.bosh-lite.com

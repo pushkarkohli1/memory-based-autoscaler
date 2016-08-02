@@ -1,0 +1,6 @@
+---
+blobstore:
+  provider: local
+  options:
+    blobstore_path: /tmp/memory-based-autoscaler-blobs
+final_name: memory-based-autoscaler

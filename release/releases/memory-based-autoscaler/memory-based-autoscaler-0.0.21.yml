@@ -1,0 +1,30 @@
+---
+packages:
+- name: cf_cli
+  version: 54f5ee71e4f829d2f009461b79a9930c70f33bb5
+  fingerprint: 54f5ee71e4f829d2f009461b79a9930c70f33bb5
+  sha1: 67d120adfaf6ba4eb52ec6f8b75306e25314d9d2
+  dependencies: []
+- name: common
+  version: d83e9d13dc21a50d19a829232582496637f02eca
+  fingerprint: d83e9d13dc21a50d19a829232582496637f02eca
+  sha1: 5ed1003696670b6bcb91736016459a6318ee26fc
+  dependencies: []
+- name: memory_based_autoscaler
+  version: bbc0729348bb45edd208fe32e5f49cf7a163e464
+  fingerprint: bbc0729348bb45edd208fe32e5f49cf7a163e464
+  sha1: ca3c1b8216ce246f03fc4cd275d1c5b2cb86cf4f
+  dependencies: []
+jobs:
+- name: delete-all
+  version: 9d94acf53a4696bcc3c9aaa666df77efc2248c75
+  fingerprint: 9d94acf53a4696bcc3c9aaa666df77efc2248c75
+  sha1: 576d48993b96b25c3f77ff5686ff77c1301e6952
+- name: deploy-all
+  version: cd8d40fe8c7f23b41156c5eb5149dcab5dfb41e8
+  fingerprint: cd8d40fe8c7f23b41156c5eb5149dcab5dfb41e8
+  sha1: 0b37e9c3c29d67171d7151b8d09a15f7a451908c
+commit_hash: 5c94e5fe
+uncommitted_changes: true
+name: memory-based-autoscaler
+version: 0.0.21
