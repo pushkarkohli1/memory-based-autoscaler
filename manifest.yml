@@ -24,4 +24,3 @@ applications:
     SKIP_SSL_VALIDATION: true
     UAA_HOST: https://uaa.system.labb.ecsteam.io
     VERIFY_SSL: true
-    ADMIN_APP: http://memoryautoscaler-web.apps.labb.ecsteam.io

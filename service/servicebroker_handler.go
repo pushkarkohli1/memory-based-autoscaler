@@ -195,10 +195,10 @@ func createServiceInstanceHandler(formatter *render.Render) http.HandlerFunc {
 		w.Header().Add("Access-Control-Allow-Origin", req.Header.Get("Origin"))
 		w.Header().Add("Access-Control-Allow-Methods", "PUT")
 
-		adminApp := os.Getenv("ADMIN_APP")
+		appsDomain := os.Getenv("OUR_APPS_DOMAIN")
 
 		result := map[string]string{
-			"dashboard_url":adminApp + "/autoscale/" + serviceInstanceGuid + "/" + appName,
+			"dashboard_url":"http://memoryautoscaler-web." + appsDomain + "/autoscale/" + serviceInstanceGuid + "/" + appName,
 		}
 		formatter.JSON(w, http.StatusOK, result)
 

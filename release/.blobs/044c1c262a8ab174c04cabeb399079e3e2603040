@@ -1,5 +1,0 @@
----
-buildpack: https://github.com/cloudfoundry/go-buildpack.git
-command: memory-based-autoscaler
-memory: 512M
-path: memory-based-autoscaler.zip

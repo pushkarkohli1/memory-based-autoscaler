@@ -1,8 +1,0 @@
----
-name: memory_based_autoscaler
-
-dependencies: []
-
-files:
-- memory_based_autoscaler/memory-based-autoscaler.zip
-- memory_based_autoscaler/manifest.yml
