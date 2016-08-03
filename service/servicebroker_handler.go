@@ -131,13 +131,6 @@ type ServiceInst struct {
 	ServiceBindingsUrl string `json:"service_bindings_url"`
 }
 
-//type CfResourceList struct {
-//	Count     int           `json:"total_results"`
-//	Pages     int           `json:"total_pages"`
-//	NextUrl   string        `json:"next_url"`
-//	Resources []AppResource `json:"resources"`
-//}
-
 var ScalerMap = make(map[string]scaler.Scaler)
 
 func catalogHandler(formatter *render.Render) http.HandlerFunc {
@@ -355,42 +348,6 @@ func ExtractVarsFromRequest(r *http.Request, varName string) string {
 	return mux.Vars(r)[varName]
 }
 
-/*
-func getAppName2 (serviceInstanceGuid string) string {
-	var serviceInstanceResource ServiceInstanceResource
-
-	scalerInst := ScalerMap[serviceInstanceGuid]
-
-	gcfClientScaler := scalerInst.GetCfClient()
-
-	url := fmt.Sprintf("/v2/service_instances/%s", serviceInstanceGuid)
-
-	fmt.Println("2******************** url: " + url)
-
-	r := gcfClientScaler.NewRequest("GET", url)
-
-	fmt.Println("******************** req: " + r.Method + " " +  r.RequestURI)
-
-	fmt.Println("******************** starting request...")
-
-  resp, err := gcfClientScaler.DoRequest(r)
-
-	fmt.Println("******************** finished request.")
-
-	resBody, err := ioutil.ReadAll(resp.Body)
-
-	err = json.Unmarshal(resBody, &serviceInstanceResource)
-
-	fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
-
-	serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
-
-	fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
-
-	return "testApp"
-}
-*/
-
 func getAppName (serviceInstanceGuid string) string {
 	scalerInst := ScalerMap[serviceInstanceGuid]
 
@@ -400,9 +357,9 @@ func getAppName (serviceInstanceGuid string) string {
 
 	url := fmt.Sprintf("%s/v2/service_instances/%s", apiEndpoint, serviceInstanceGuid)
 
-	fmt.Println("******************** url: " + url)
+	//fmt.Println("******************** url: " + url)
 
-	fmt.Println("******************** token: " + token)
+	//fmt.Println("******************** token: " + token)
 
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("Authorization", token)
@@ -411,7 +368,7 @@ func getAppName (serviceInstanceGuid string) string {
 	//req.Header.Set("Cookie", "")
 	// need to figure out a better way to skip the ssl validation
 
-	fmt.Println("******************** req: " + req.Method + " " +  req.RequestURI)
+	//fmt.Println("******************** req: " + req.Method + " " +  req.RequestURI)
 
 
 	tr := &http.Transport{
@@ -419,11 +376,11 @@ func getAppName (serviceInstanceGuid string) string {
 	}
 	client := &http.Client{Transport: tr}
 
-	fmt.Println("******************** starting request...")
+	//fmt.Println("******************** starting request...")
 
 	resp, err := client.Do(req)
 
-	fmt.Println("******************** finished request.")
+	//fmt.Println("******************** finished request.")
 
 	if err != nil {
 		panic(err)
@@ -435,16 +392,19 @@ func getAppName (serviceInstanceGuid string) string {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("******************** respBody: %v\n", respBody)
+	//fmt.Printf("******************** respBody: %v\n", respBody)
 
 	err = json.Unmarshal(respBody, &serviceInstanceResource)
 
-	fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
+	//fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
 
 	serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
 
-	fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
+	//fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
 
+	// hard-coding this for the demo only due to a marshalling issue
+	// trying to navigate the cf api to get the app name. Will fix after
+	// presentation
 	return "dummy"
 
 }
