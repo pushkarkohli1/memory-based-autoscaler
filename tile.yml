@@ -29,8 +29,6 @@ packages:
     command: memory-based-autoscaler
     memory: 512M
     buildpack: https://github.com/cloudfoundry/go-buildpack.git 
-    env:
-      ADMIN_APP: http://memoryautoscaler-web.apps.labb.ecsteam.io
   needs_cf_credentials: true
   auto_services:
   - name: p-mysql
@@ -42,8 +40,6 @@ packages:
   manifest:
     path: resources/memoryautoscaler-web.jar
     memory: 1GB
-    env:
-      START_MEMORY_AUTOSCALE_URL: https://memory-based-autoscaler.apps.labb.ecsteam.io/autoscale
   needs_cf_credentials: false
   
 
