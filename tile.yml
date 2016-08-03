@@ -29,11 +29,24 @@ packages:
     command: memory-based-autoscaler
     memory: 512M
     buildpack: https://github.com/cloudfoundry/go-buildpack.git 
+    env:
+      ADMIN_APP: http://memoryautoscaler-web.apps.labb.ecsteam.io
   needs_cf_credentials: true
   auto_services:
   - name: p-mysql
     plan: 100mb-dev
   enable_global_access_to_plans: true
+
+- name: memoryautoscaler-web
+  type: app
+  manifest:
+    path: resources/memoryautoscaler-web.jar
+    memory: 1GB
+    env:
+      START_MEMORY_AUTOSCALE_URL: https://memory-based-autoscaler.apps.labb.ecsteam.io/autoscale
+  needs_cf_credentials: false
+  
+
 
 # Include stemcell criteria if you don't want to accept the default.
 # Since this stemcell is only used to run pre and post errands, we
@@ -62,15 +75,20 @@ stemcell_criteria:
 #     (( .properties.<property-name> ))
 #
 forms:
-- name: security
-  label: Security
-  description: Connection Security Parameters
+- name: Extra Config
+  label: Extra Configuration
+  description: More Configuration Parameters
   properties:
   - name: skip_ssl_validation
     type: boolean
     default: false
     label: Skip SSL Validation for self-signed certificates when connecting to the firehose
     description: Skip SSL Validation for self-signed certificates when connecting to the firehose
+  - name: our_apps_domain
+    type: string
+    label: The Application Domain
+    
+
 
 # Add any dependencies your tile has on other installed products.
 # This is often appropriate when using automatic service provisioning
