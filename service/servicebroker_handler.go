@@ -398,7 +398,7 @@ func getAppName (serviceInstanceGuid string) string {
 
 	//fmt.Printf("******************** serviceInstanceResource: %v\n", serviceInstanceResource)
 
-	serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
+	//serviceBindingsUrl := serviceInstanceResource.Entity.ServiceBindingsUrl
 
 	//fmt.Println("******************** serviceBindingsUrl: " + serviceBindingsUrl)
 
